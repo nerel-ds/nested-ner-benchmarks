@@ -8,14 +8,12 @@ import numpy as np
 from collections import defaultdict
 #import tensorflow as tf
 import tensorflow.compat.v1 as tf
-import pandas as pd
 
 tf.compat.v1.disable_v2_behavior()
 import h5py
 
 import util
 
-from tabulate import tabulate
 
 class BiaffineNERModel():
   def __init__(self, config):
@@ -265,7 +263,6 @@ class BiaffineNERModel():
       if type > 0:
         sid, s,e = candidates[i]
         top_spans[sid].append((s,e,type,span_scores[i,type]))
-        #print(top_spans)
 
 
     top_spans = [sorted(top_span,reverse=True,key=lambda x:x[3]) for top_span in top_spans]
@@ -295,16 +292,30 @@ class BiaffineNERModel():
 
       print("Loaded {} eval examples.".format(len(self.eval_data)))
 
-  def load_predict_data(self):
-    if self.eval_data is None:
-      def load_line(line):
-        example = json.loads(line)
-        return self.tensorize_example(example, is_training=False), example
 
-      with open(self.config["eval_path"]) as f:
-        self.eval_data = [load_line(l) for l in f.readlines()]
+  def predict(self, session, is_final_test=False):
+    self.load_eval_data()
 
-      print("Loaded {} eval examples.".format(len(self.eval_data)))
+    start_time = time.time()
+    is_flat_ner = 'flat_ner' in self.config and self.config['flat_ner']
+    predictions = []
+
+    for example_num, (tensorized_example, example) in enumerate(self.eval_data):
+      feed_dict = {i:t for i,t in zip(self.input_tensors, tensorized_example)}
+      candidate_ner_scores = session.run(self.predictions, feed_dict=feed_dict)
+      pred_ners = self.get_pred_ner(example["sentences"], candidate_ner_scores, is_flat_ner)
+      pred_ners = sorted(list(pred_ners), key=lambda x: (x[0], x[1], x[2]))
+      pred_ners = [(i[0], i[1], i[2], self.ner_types[i[3] - 1]) for i in pred_ners]
+      
+      ners = [[] for i in range(len(example['sentences']))]
+      for sid, start, end, ner_type in pred_ners: ners[sid].append((start, end, ner_type))
+      predictions.append({
+        'doc_key': example['doc_key'],
+        'sentences': example['sentences'],
+        'ners': ners,
+      })
+    return predictions
+
 
   def evaluate(self, session, is_final_test=False):
     self.load_eval_data()
@@ -370,49 +381,4 @@ class BiaffineNERModel():
     summary_dict["Mention precision"] = m_p
 
     return util.make_summary(summary_dict), m_f1
-    
-  def toxic_span_predict(self, session, is_final_test=False):
-    self.load_predict_data()
-
-    tp,fn,fp = 0,0,0
-    start_time = time.time()
-    num_words = 0
-    sub_tp,sub_fn,sub_fp = [0] * self.num_types,[0]*self.num_types, [0]*self.num_types
-
-    is_flat_ner = 'flat_ner' in self.config and self.config['flat_ner']
-
-    spans_df = pd.DataFrame(columns = ['tokens', 'preds', 'observation_number'])
-
-    for example_num, (tensorized_example, example) in enumerate(self.eval_data):
-      feed_dict = {i:t for i,t in zip(self.input_tensors, tensorized_example)}
-      candidate_ner_scores = session.run(self.predictions, feed_dict=feed_dict)
-
-      num_words += sum(len(tok) for tok in example["sentences"])
-
-
-      pred_ners = self.get_pred_ner(example["sentences"], candidate_ner_scores,is_flat_ner)
-    
-      tokens = []
-      sentence = example["sentences"][0]
-      preds = []
-      obs = []
-      obs_num = "observation_number_" + str(example_num)
-
-      for sid, s, e, t in pred_ners:
-        obs.append(obs_num)
-        tokens.append((sentence[s]))
-        if t == 1:
-            preds.append("O")
-        if t == 2:
-            preds.append("TOX")
-
-      new_row = pd.DataFrame([[tokens, preds, obs]], columns=['tokens', 'preds', 'observation_number'])
-      spans_df = spans_df.append(new_row)
-    
-    spans_df.to_csv('toxic_spans.csv')
-
-
-      
-
-      
 
