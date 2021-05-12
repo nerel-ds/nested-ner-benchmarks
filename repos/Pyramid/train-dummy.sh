@@ -1,0 +1,21 @@
+python train_ner.py \
+	--batch_size 4 \
+	--evaluate_interval 500 \
+	--dataset sentence100421 \
+	--pretrained_wv ../pretrained/cc.ru.300.vec  \
+	--max_epoches 500 \
+	--model_class PyramidNestNER  \
+	--model_write_ckpt logs-100421/pyramid-only-ccru-sentence100421 \
+	--optimizer sgd \
+	--lr 0.01 \
+	--tag_form iob2  \
+	--cased 1 \
+	--token_emb_dim 300 \
+	--char_emb_dim 30 \
+	--char_encoder lstm \
+	--lm_emb_dim 0 \
+	--lm_emb_path ./rubert-cased-sentence \
+	--tag_vocab_size 30 \
+	--vocab_size 2000000 \
+	--dropout 0.4 \
+	--max_depth 16

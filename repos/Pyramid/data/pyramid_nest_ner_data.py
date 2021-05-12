@@ -7,7 +7,7 @@ import six
 import json
 import random
 import time
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from torch.utils.data import Dataset, DataLoader
 from utils import *
 from itertools import combinations 
@@ -130,19 +130,65 @@ class PyramidNestNERTrainer(Trainer):
             n_recall += len(_labels_set)
             n_pred += len(_preds_set)
             n_correct += len(_labels_set & _preds_set)
-            
+
         rec = n_correct / (n_recall + 1e-8)
         prec = n_correct / (n_pred + 1e-8)
         f1 = 2 / (1/(rec+1e-8) + 1/(prec+1e-8))
-        return {  
-            'precision' : prec,
-            'recall' : rec,
-            'f1' : f1,
-            'confusion_dict' : None,
-            'sents': sents,
-            'pred_set_list': pred_set_list,
-            'entities': entities,
-        }
+
+        result_dict = OrderedDict()
+        result_dict['Mention F1'] = f1
+        result_dict['Mention recall'] = rec
+        result_dict['Mention precision'] = prec
+
+        result_dict['f1'] = f1
+        result_dict['recall'] = rec
+        result_dict['precision'] = prec
+        result_dict['confusion_dict'] = 0.0
+
+        entity_types = sorted(set([e['entity_type'] for e_list in entities for e in e_list]))
+        print('Entity types: ', len(entity_types))
+        for entity_type in entity_types:
+            n_recall = n_pred = n_correct = 0
+            for b in range(len(entities)):
+                _entities = entities[b]
+
+                _preds_set = {
+                    pred_ent
+                    for pred_ent in pred_set_list[b]
+                    if pred_ent[0] == entity_type
+                }
+
+                _labels_set = {
+                    (e['entity_type'], *e['span']) 
+                    for e in _entities
+                    if e['entity_type'] == entity_type
+                }
+
+                n_recall += len(_labels_set)
+                n_pred += len(_preds_set)
+                n_correct += len(_labels_set & _preds_set)
+
+            rec = n_correct / (n_recall + 1e-8)
+            prec = n_correct / (n_pred + 1e-8)
+            f1 = 2 / (1/(rec+1e-8) + 1/(prec+1e-8))
+            
+            result_dict[f'{entity_type} F1'] = f1
+            result_dict[f'{entity_type} recall'] = rec
+            result_dict[f'{entity_type} precision'] = prec
+        
+        for k, v in result_dict.items():
+            print(f'{k}: {v*100:0.2f}%')
+
+        return result_dict
+        # {  
+        #     'precision' : prec,
+        #     'recall' : rec,
+        #     'f1' : f1,
+        #     'confusion_dict' : None,
+        #     'sents': sents,
+        #     'pred_set_list': pred_set_list,
+        #     'entities': entities,
+        # }
         
     
     def evaluate_model(self, model=None, verbose=0, test_type='valid'):
