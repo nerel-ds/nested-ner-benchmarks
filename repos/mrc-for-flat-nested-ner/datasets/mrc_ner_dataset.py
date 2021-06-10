@@ -5,6 +5,7 @@ import json
 import torch
 from tokenizers import BertWordPieceTokenizer
 from torch.utils.data import Dataset
+from typing import List
 
 
 class MRCNERDataset(Dataset):
@@ -18,8 +19,10 @@ class MRCNERDataset(Dataset):
         is_chinese: is chinese dataset
     """
     def __init__(self, json_path, tokenizer: BertWordPieceTokenizer, max_length: int = 128, possible_only=False,
-                 is_chinese=False, pad_to_maxlen=False):
+                 is_chinese=False, pad_to_maxlen=False, filter_tags: List[str] = None):
         self.all_data = json.load(open(json_path, encoding="utf-8"))
+        if filter_tags:
+            self.all_data = [i for i in self.all_data if i['entity_label'] in filter_tags]
         self.tokenzier = tokenizer
         self.max_length = max_length
         self.possible_only = possible_only

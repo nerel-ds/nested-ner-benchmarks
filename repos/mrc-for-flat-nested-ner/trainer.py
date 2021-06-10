@@ -4,7 +4,7 @@
 import argparse
 import os
 from collections import namedtuple
-from typing import Dict
+from typing import Dict, List
 
 import pytorch_lightning as pl
 import torch
@@ -284,7 +284,7 @@ class BertLabeling(pl.LightningModule):
         return self.get_dataloader("test")
         # return self.get_dataloader("dev")
 
-    def get_dataloader(self, prefix="train", limit: int = None) -> DataLoader:
+    def get_dataloader(self, prefix="train", limit: int = None, filter_tags: List[str] = None) -> DataLoader:
         """get training dataloader"""
         """
         load_mmap_dataset
@@ -295,7 +295,8 @@ class BertLabeling(pl.LightningModule):
                                 tokenizer=BertWordPieceTokenizer(vocab_path),
                                 max_length=self.args.max_length,
                                 is_chinese=self.chinese,
-                                pad_to_maxlen=False
+                                pad_to_maxlen=False,
+                                filter_tags=filter_tags
                                 )
 
         if limit is not None:
