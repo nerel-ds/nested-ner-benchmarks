@@ -13,12 +13,14 @@ Preconverted datasets (from [10.04.2021](https://disk.yandex.ru/d/b7uDk5vxZCi6Ug
 * jsonlines for Biaffine NER - [link](https://disk.yandex.ru/d/TOUjOmmSCpPk1A?w=1)  
 * json for Pyramid NER - [link](https://disk.yandex.ru/d/GSmLv62NsB2r_Q?w=1)  
 * conll-like for seq2seq NER - [link](https://disk.yandex.ru/d/qmJebDNXEDpwNw?w=1)  
+* json for mrc-for-flat-nested-ner - [link](https://disk.yandex.ru/d/gzVPejuVPuXcZQ)
 
 # Language models
 * FastText  
 [cc300ru](https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.ru.300.vec.gz)
 * BERT  
-[ruBERT by DeepPavlov](http://files.deeppavlov.ai/deeppavlov_data/bert/rubert_cased_L-12_H-768_A-12_v2.tar.gz)
+[ruBERT by DeepPavlov](http://files.deeppavlov.ai/deeppavlov_data/bert/rubert_cased_L-12_H-768_A-12_v2.tar.gz)  
+[ruBERT cased by DeepPavlov + huggingface](https://huggingface.co/DeepPavlov/rubert-base-cased/tree/main)
 
 # Methods
 Main metric is F1-score. The named entity is considered correct when both boundary and
